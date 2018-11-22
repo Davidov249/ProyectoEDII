@@ -30,7 +30,6 @@ router.get('/login', function(req, res, next) {
       }
     })
   })
-  //res.send('respond with a resource');
 });
 
 /* POST new user */
@@ -40,11 +39,6 @@ router.post('/register', (req, res, next) => {
         status: 500
     })
     var passcon = md5(req.body.password)
-     //CryptoJS.MD5(req.body.password)
-    //var objson = req.body
-    //var encpass = CryptoJS.MD5(objson.password)
-    //objson.password = encpass
-    //console.log(passcon)
     var json1 = {
       usuario: req.body.usuario,
       password: passcon,
@@ -99,6 +93,39 @@ router.put('/actualizar', (req, res, next) =>{
   })
 })
 
+/* PUT update password*/
+router.put('/actualizarPassword', (req, res, next) =>{
+  jwt.verify(req.body.token, req.body.secreto, (err, data)=>{
+    if (err){
+      res.status(500).send({status : 500});
+    }else{
+      passcon = md5(req.body.password)
+      mongoClient.connect(url, {useNewUrlParser: true}, (err, client)=> {
+        if (err) res.status(500).send({
+          status: 500
+        })
+        const database = client.db(dbName)
+        const collection = database.collection('usuarios')
+        collection.find({usuario : req.body.usuario, password : passcon}).toArray((err,docs) => {
+            if(err) res.status(500).send({status : 500});
+            if(docs == ""){
+              res.status(404).send({status: 404});
+            }else{
+              req.body.campo.password = md5(req.body.campo.password)
+              collection.findOneAndUpdate({usuario: req.body.usuario}, {$set : req.body.campo},function(err, client) {
+                if (err) throw err;
+                console.log(client)
+                var token = generarToken({usuario: data.usuario, password: data.password}, req.body.secreto)
+                data = {no : "content"}
+                res.status(200).send({status: 200, token: token})
+            })
+            }
+        })    
+      })
+    }
+  })
+})
+
 /* DELETE user */
 router.delete('/borrar/', (req, res) => {
   var secreto = req.body.jwt
@@ -130,11 +157,6 @@ router.delete('/borrar/', (req, res) => {
   })
   
 });
-
-/*function Cifrar(password){
-  var string = md5(password)
-  return string
-}*/
 
 function generarToken(json, clave){
   jwtsimple.encode(json, clave)
