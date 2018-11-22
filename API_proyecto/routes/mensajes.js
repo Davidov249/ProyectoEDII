@@ -1,55 +1,341 @@
 var express = require('express');
 var router = express.Router();
 var jwt = require('jsonwebtoken')
-var jwtsimple  = require('jwt-simple')
-
+var jwtsimple = require('jwt-simple')
+var fs = require('fs')
+const assert = require('assert')
+const request = require('request')
 const mongoClient = require('mongodb').MongoClient
 const url = 'mongodb://localhost:27017'
 const dbName = 'ChatDB'
+const dateFormat = require('dateformat');
+//dateFormat.masks.formato = 'dd/mm/yyyy-HH:MM:SS'
+//var now = new Date();
 
 /* GET messages */
-router.get('/all'/*/:remitente/:receptor'*/, function(req, res, next) {
-  mongoClient.connect(url, {useNewUrlParser: true}, (err, client) =>{
-      if (err) return next(createError(500))
-      const database = client.db(dbName)
-      const collection = database.collection('mensajes')
-      var vacio = false;
-      collection.find({"remitente" : req.query.remitente, "receptor" : req.query.receptor}).toArray((err, docs) =>{
-          if (err) return next(createError(500))
-          else{
-            if (docs.length == 0){
-                res.status(404).send({
-                    status: 404
-                });
-            }else{
-                var json = {
-                    mensajes: docs
-                };
-                res.send({
-                    status: 200,
-                    resultado: json
-                });
-            }
-          } 
-      })
-  })
+router.get('/all', function(req, res, next) {
+    jwt.verify(req.query.token, req.query.secreto, (err, data)=>{
+        if (err) {
+            res.status(403).send({status: 403, message: "token no valido"});
+        }else{
+            mongoClient.connect(url, {useNewUrlParser: true}, (err, client) =>{
+                if (err) return next(createError(500))
+                const database = client.db(dbName)
+                const collection = database.collection('mensajes')
+                var vacio = false;
+                var vaciousuario
+                collection.find({remitente : req.query.remitente, receptor : req.query.receptor}).toArray((err, docs) =>{
+                    if (err) {
+                          res.status(500).send({
+                          status: 500,
+                          message: "error al conectarse con la base de datos"
+                        });
+                    }
+                    else{
+                        if (docs.length == 0) {
+                            vaciousuario = true;
+                        }else{
+                            var jsonUsuario = {
+                            mensajes: docs
+                        };
+                        collection.find({remitente: req.query.receptor, receptor: req.query.remitente}).toArray((err, docs2) =>{
+                            if (err) {
+                                res.status(500).send({
+                                    status: 500,
+                                    message: "error al conectarse con la base de datos"
+                                });
+                            }else{
+                                if (docs.length == 0) {
+                                    vaciousuario2 = true;
+                                }
+                                if(vaciousuario && vaciousuario2){
+                                    res.status(404).send({
+                                        status: 404,
+                                        message: "no se encontraron mensajes"
+                                    });
+                                }else{
+                                    var jsonUsuario2 = {
+                                        mensajes: docs2
+                                    }
+                                    var token = generarToken({
+                                        usuario: data.usuario,
+                                        password: data.password
+                                        }, req.query.secreto)
+                                    data = {no: "content"}
+                                    res.status(200).send({
+                                        status: 200,
+                                        mensajesEnv: jsonUsuario,
+                                        mensajesRec: jsonUsuario2,
+                                        token: token
+                                    });;
+                                }
+        
+                            }
+                        })
+                    }
+                  } 
+              })
+          })
+        }
+    })
+});
+
+/**POST contraseña cifrado mensajes */
+router.post('/claves', (req, res) => {
+    jwt.verify(req.body.token, req.body.token, (err, data)=>{
+        if (err) {
+            res.status(403).send({status: 403, message: "token no valido"});
+        }else{
+            mongoClient.connect(url, {useNewUrlParser: true}, (err, client)=>{
+                if (err) res.status(500).send({
+                    status: 500,
+                    message: "error al conectarse a la base de datos"
+                })
+                else{
+                    const database = client.db(dbName)
+                    const collection = database.collection('claves')
+                    var jsoninverso = {
+                        remitente: req.body.receptor,
+                        receptor: req.body.remitente,
+                        clavecifrado: req.body.clavecifrado
+                    }
+                    collection.insertMany([req.body, jsoninverso], err =>{
+                        if (err) 
+                        {
+                            res.status(500).send({
+                            status: 500,
+                            message: "error al insertar"
+                            }).end()
+                        }else{
+                            var token = generarToken({
+                                usuario: data.usuario,
+                                password: data.password
+                                }, req.query.secreto)
+                            data = {no: "content"}
+                            res.status(201).send({status: 201, message: "contraseña creada", clavecifrado: req.body.clavecifrado, token: token});
+                        }
+                    })
+                }
+            })
+        }
+    })
+});
+
+/**GET contraseña de cifrado */
+router.get('/claves', (req, res) => {
+    jwt.verify(req.query.token, req.query.secreto, (err, data)=>{
+        if (err) {
+            res.status(403).send({status: 403, message: "token no valido"});
+        }else{
+            mongoClient.connect(url, {useNewUrlParser: true}, (err, client)=>{
+                if (err) {
+                    res.status(500).send({
+                    status: 500,
+                    message: "error al conectarse a la base de datos"
+                    })
+                }else{
+                    const database = client.db(dbName)
+                    const collection = database.collection('claves')
+                    collection.find({remitente: req.query.remitente, receptor: req.query.receptor}).toArray((err, docs)=>{
+                        if (err) 
+                        {
+                            res.status(500).send({
+                            status: 500,
+                            message: "error al conectarse con la base de datos"
+                            });
+                        }else{
+                            var token = generarToken({
+                                usuario: data.usuario,
+                                password: data.password
+                                }, req.query.secreto)
+                            data = {no: "content"}
+                            res.status(200).send(
+                                {
+                                    status: 200,
+                                    message: "Clave obtenida",
+                                    token: token
+                                }
+                            );
+                        }
+                    })
+                }
+            })
+        }
+    })
+});
+
+/**POST prueba datetime */
+router.post('/prueba', (req, res) => {
+    var now = new Date();
+    dateFormat.masks.formato = 'dd/mm/yyyy-HH:MM:ss';
+    console.log(dateFormat(now, "formato"));
+     res.json(dateFormat(now, "formato"));
 });
 
 /* POST message */
 router.post('/', (req, res, next)=>{
-    mongoClient.connect(url, {useNewUrlParser : true}, (err, client)=>{
-        if (err) res.status(500).send({
-            status: 500
-        })
-        const database = client.db(dbName)
-        const collection = database.collection('mensajes')
-        collection.insertOne(req.body, err => {
-            if (err) res.status(500).send({
-                status: 500
-            }).end()
-            res.status(201).end()
-        })
+    jwt.verify(req.body.token, req.body.secreto, (err, data)=>{
+        if (err) {
+            res.status(403).send({status: 403, message: "token no valido"});
+        }else{
+            mongoClient.connect(url, {useNewUrlParser : true}, (err, client)=>{
+                if (err) res.status(500).send({
+                    status: 500
+                })
+                const database = client.db(dbName)
+                const collection = database.collection('mensajes')
+                //formato json = {remitente: x, receptor: y, mensaje: z, , tipo: "mensaje" (la palabra mensaje), fecha: null}
+                var now = new Date();
+                dateFormat.masks.formato = 'dd/mm/yyyy-HH:MM:ss';
+                req.body.fecha = dateFormat(now, "formato")
+                collection.insertOne(req.body, err => {
+                    if (err) res.status(500).send({
+                        status: 500
+                    }).end()
+                    var token = generarToken({
+                        usuario: data.usuario,
+                        password: data.password
+                        }, req.query.secreto)
+                    data = {no: "content"}
+                    res.status(201).send(
+                        {
+                            status: 201,
+                            message: "Mensaje enviado con exito",
+                            token: token
+                        })
+                })
+            })
+        }
     })
 })
+
+/** GET download message */
+router.get('/downloadmsg', (req, res, next) => {
+    jwt.verify(req.query.token, req.query.secreto, (err, data)=>{
+        if (err) {
+            res.status(403).send({status: 403, message: "token no valido"});
+        }else{
+            mongoClient.connect(url, {useNewUrlParser: true}, (err, client)=>{
+                if (err) {res.status(500).send({
+                    status: 500
+                })}
+                const database = client.db(dbName)
+                const collection = database.collection('mensajes')
+                collection.find({remitente: req.query.remitente, receptor: req.query.receptor, tipo: "archivo"}).toArray((err, docs) =>{
+                    if (err) {res.status(500).send({
+                        status: 500
+                    })}else{
+                        if (docs.length == 0){
+                            res.status(404).send({
+                                status: 404
+                            });
+                        }else{
+                            var token = generarToken({
+                                usuario: data.usuario,
+                                password: data.password
+                              }, req.query.secreto)
+                            data = {no: "content"}
+                            res.status(200).send({
+                                status: 200,
+                                message: "obtenido(s) con exito",
+                                url: docs[docs.length - 1].url,
+                                token: token
+                            })
+                        }
+                    }
+                })
+            })
+        }
+    }) 
+});
+
+/** GET file via download */
+router.get('/download', (req, res) => {
+    jwt.verify(req.query.token, req.query.secreto, (err, data)=>{
+        if (err) {
+            res.status(403).send({status: 403, message: "token no valido"});
+        }else{
+            var file = req.query.ruta
+            var token = generarToken({
+                usuario: data.usuario,
+                password: data.password
+              }, req.query.secreto)
+            res.download(file).status(200).send({status: 200, message: "subido con exito", token: token})
+        }
+    })
+});
+
+/* Upload a file via message */
+router.post('/upload', (req, res, next) => {
+    jwt.verify(req.query.token, req.query.secreto, (err, data)=>{
+        if (err) {
+            res.status(403).send({status: 403, message: "token no valido"});
+        }else{
+            let formidable = require('formidable');
+            var form = new formidable.IncomingForm();
+            form.uploadDir = './uploads'
+            form.keepExtensions = true;
+            form.maxFieldsSize = 10 * 1024 * 1024
+            form.multiples = false;
+            form.parse(req, (err, fields, files)=>{
+            if (err) {
+                res.json({
+                    status: 500,
+                    data: {},
+                    message: "No se pudo subir el archivo"
+                });
+        }
+        var varfiles = files
+        if (varfiles){
+            var filename = varfiles.archivo.path.split('\\')[1];
+            mongoClient.connect(url, {useNewUrlParser: true}, (err, client)=>{
+                if (err) res.status(500).send({
+                    status: 500
+                })
+                const database = client.db(dbName)
+                const collection = database.collection('mensajes')
+                var mensaje = {
+                    remitente: req.query.remitente,
+                    receptor: req.query.receptor,
+                    tipo: "archivo",
+                    url: "uploads/" + filename,
+                    nombre: varfiles.archivo.name
+                }
+                collection.insertOne(mensaje, err => {
+                    if (err) res.status(500).send({
+                        status: 500,
+                        message: "error al enviar el mensaje"
+                    }).end()
+                    var token = generarToken({
+                        usuario: data.usuario,
+                        password: data.password
+                      }, req.query.secreto)
+                    data = {no: "content"}
+                    res.status(202).send({
+                        status: 202,
+                        message: "Subido con exito",
+                        data: filename,
+                        token: token
+                    }).end()
+                })
+            })
+        }else{
+            res.status(500).send({
+                status: 500,
+                data: {},
+                message: "No se subio ningun archivo"
+            });
+        }
+            })
+        }
+    })
+});
+
+function generarToken(json, clave){
+    jwtsimple.encode(json, clave)
+    return token = jwt.sign(json, clave, {
+        expiresIn: 120
+    })
+  }
 
 module.exports = router;
