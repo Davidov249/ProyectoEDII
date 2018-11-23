@@ -25,7 +25,7 @@ router.get('/allusers', (req, res) => {
           if (docs.length == 0){
             res.status(204).json({message: "No hay usuarios registrados"});
           }else{
-            res.status(200).json({usuarios: docs});
+            res.status(200).json(docs);
           }
         }
       })
@@ -58,7 +58,7 @@ router.get('/conversasiones', (req, res) => {
                   usuario: data.usuario,
                   password: data.password
                 }, req.query.secreto)
-                res.status(200).send({token: token, conversasiones: docs});
+                res.status(200).send({token: token, docs});
               }
             }
           })

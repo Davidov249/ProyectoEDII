@@ -59,8 +59,8 @@ router.get('/all', function(req, res, next) {
                                         }, req.query.secreto)
                                     data = {no: "content"}
                                     res.status(200).send({
-                                        mensajesEnv: jsonUsuario,
-                                        mensajesRec: jsonUsuario2,
+                                        jsonUsuario,
+                                        jsonUsuario2,
                                         token: token
                                     });;
                                 }
