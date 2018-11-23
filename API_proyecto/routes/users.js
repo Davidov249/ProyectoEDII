@@ -9,7 +9,7 @@ const dbName = 'ChatDB'
 
 
 /**GET todos los usuarios */
-router.get('/', (req, res) => {
+router.get('/allusers', (req, res) => {
   mongoClient.connect(url, {useNewUrlParser: true}, (err, client)=>{
     if (err){
       res.status(500).send({status: 500, message: "error al conectar a la base de datos"});
