@@ -7,7 +7,43 @@ const mongoClient = require('mongodb').MongoClient
 const url = 'mongodb://localhost:27017'
 const dbName = 'ChatDB'
 
-/* GET token entrada */
+/**GET todos los usuarios */
+router.get('/', (req, res) => {
+  jwt.verify(req.query.token, req.query.secreto, (err, data)=>{
+    if (err){
+      res.status(401).send({status : 401, message: "token no valido"});
+    }else{
+      mongoClient.connect(url, {useNewUrlParser: true}, (err, client)=>{
+        if (err){
+          res.status(500).send({status: 500, message: "error al conectar a la base de datos"});
+        }else{
+          const database = client.db(dbName)
+          const collection = database.collection('usuarios')
+          collection.find({}).toArray((err, docs) =>{
+            if (err){
+              res.status(500).send({
+                status: 500, 
+                message: "error en el proceso de busqueda"
+              })
+            }else{
+              if (docs.length == 0){
+                res.status(404).send({status: 404, message: "No hay usuarios registrados"});
+              }else{
+                var token = generarToken({
+                  usuario: req.query.usuario,
+                  password: req.query.password
+                }, req.query.secreto)
+                res.status(200).send({status: 200, token: token, message: "Lista de usuarios"});
+              }
+            }
+          })
+        }
+      })
+    }
+  })
+});
+
+/* GET login  */
 router.get('/login', function(req, res, next) {
   mongoClient.connect(url, {useNewUrlParser: true}, (err, client) => {
     if (err) 
