@@ -30,8 +30,8 @@ router.get('/', (req, res) => {
                 res.status(404).send({status: 404, message: "No hay usuarios registrados"});
               }else{
                 var token = generarToken({
-                  usuario: req.query.usuario,
-                  password: req.query.password
+                  usuario: data.usuario,
+                  password: data.password
                 }, req.query.secreto)
                 res.status(200).send({status: 200, token: token, message: "Lista de usuarios"});
               }
