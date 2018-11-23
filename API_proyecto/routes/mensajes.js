@@ -4,22 +4,21 @@ var jwt = require('jsonwebtoken')
 var jwtsimple = require('jwt-simple')
 var fs = require('fs')
 const assert = require('assert')
-const request = require('request')
 const mongoClient = require('mongodb').MongoClient
 const url = 'mongodb://localhost:27017'
 const dbName = 'ChatDB'
 const dateFormat = require('dateformat');
-//dateFormat.masks.formato = 'dd/mm/yyyy-HH:MM:SS'
-//var now = new Date();
 
 /* GET messages */
 router.get('/all', function(req, res, next) {
     jwt.verify(req.query.token, req.query.secreto, (err, data)=>{
         if (err) {
-            res.status(403).send({status: 403, message: "token no valido"});
+            res.status(401).send({status: 401, message: "token no valido"});
         }else{
             mongoClient.connect(url, {useNewUrlParser: true}, (err, client) =>{
-                if (err) return next(createError(500))
+                if (err) {
+                    res.status(500).send({status: 500, message: "error al conectarse con la base de datos"});
+                }
                 const database = client.db(dbName)
                 const collection = database.collection('mensajes')
                 var vacio = false;
@@ -28,7 +27,7 @@ router.get('/all', function(req, res, next) {
                     if (err) {
                           res.status(500).send({
                           status: 500,
-                          message: "error al conectarse con la base de datos"
+                          message: "error en el proceso de busqueda"
                         });
                     }
                     else{
@@ -69,7 +68,6 @@ router.get('/all', function(req, res, next) {
                                         token: token
                                     });;
                                 }
-        
                             }
                         })
                     }
@@ -82,9 +80,9 @@ router.get('/all', function(req, res, next) {
 
 /**POST contraseña cifrado mensajes */
 router.post('/claves', (req, res) => {
-    jwt.verify(req.body.token, req.body.token, (err, data)=>{
+    jwt.verify(req.body.token, req.body.secreto, (err, data)=>{
         if (err) {
-            res.status(403).send({status: 403, message: "token no valido"});
+            res.status(401).send({status: 401, message: "token no valido"});
         }else{
             mongoClient.connect(url, {useNewUrlParser: true}, (err, client)=>{
                 if (err) res.status(500).send({
@@ -125,7 +123,7 @@ router.post('/claves', (req, res) => {
 router.get('/claves', (req, res) => {
     jwt.verify(req.query.token, req.query.secreto, (err, data)=>{
         if (err) {
-            res.status(403).send({status: 403, message: "token no valido"});
+            res.status(401).send({status: 401, message: "token no valido"});
         }else{
             mongoClient.connect(url, {useNewUrlParser: true}, (err, client)=>{
                 if (err) {
@@ -176,11 +174,12 @@ router.post('/prueba', (req, res) => {
 router.post('/', (req, res, next)=>{
     jwt.verify(req.body.token, req.body.secreto, (err, data)=>{
         if (err) {
-            res.status(403).send({status: 403, message: "token no valido"});
+            res.status(401).send({status: 401, message: "token no valido"});
         }else{
             mongoClient.connect(url, {useNewUrlParser : true}, (err, client)=>{
                 if (err) res.status(500).send({
-                    status: 500
+                    status: 500,
+                    message: "error al conectarse con la base de datos"
                 })
                 const database = client.db(dbName)
                 const collection = database.collection('mensajes')
@@ -190,7 +189,8 @@ router.post('/', (req, res, next)=>{
                 req.body.fecha = dateFormat(now, "formato")
                 collection.insertOne(req.body, err => {
                     if (err) res.status(500).send({
-                        status: 500
+                        status: 500,
+                        message: "error en el proceso de insertar"
                     }).end()
                     var token = generarToken({
                         usuario: data.usuario,
@@ -213,7 +213,7 @@ router.post('/', (req, res, next)=>{
 router.get('/downloadmsg', (req, res, next) => {
     jwt.verify(req.query.token, req.query.secreto, (err, data)=>{
         if (err) {
-            res.status(403).send({status: 403, message: "token no valido"});
+            res.status(401).send({status: 401, message: "token no valido"});
         }else{
             mongoClient.connect(url, {useNewUrlParser: true}, (err, client)=>{
                 if (err) {res.status(500).send({
@@ -223,11 +223,13 @@ router.get('/downloadmsg', (req, res, next) => {
                 const collection = database.collection('mensajes')
                 collection.find({remitente: req.query.remitente, receptor: req.query.receptor, tipo: "archivo"}).toArray((err, docs) =>{
                     if (err) {res.status(500).send({
-                        status: 500
+                        status: 500,
+                        message: "error en el proceso de buscar"
                     })}else{
                         if (docs.length == 0){
                             res.status(404).send({
-                                status: 404
+                                status: 404, 
+                                message: "no hay mensajes de archivos"
                             });
                         }else{
                             var token = generarToken({
@@ -253,7 +255,7 @@ router.get('/downloadmsg', (req, res, next) => {
 router.get('/download', (req, res) => {
     jwt.verify(req.query.token, req.query.secreto, (err, data)=>{
         if (err) {
-            res.status(403).send({status: 403, message: "token no valido"});
+            res.status(401).send({status: 401, message: "token no valido"});
         }else{
             var file = req.query.ruta
             var token = generarToken({
@@ -269,7 +271,7 @@ router.get('/download', (req, res) => {
 router.post('/upload', (req, res, next) => {
     jwt.verify(req.query.token, req.query.secreto, (err, data)=>{
         if (err) {
-            res.status(403).send({status: 403, message: "token no valido"});
+            res.status(401).send({status: 401, message: "token no valido"});
         }else{
             let formidable = require('formidable');
             var form = new formidable.IncomingForm();
@@ -314,7 +316,7 @@ router.post('/upload', (req, res, next) => {
                     res.status(202).send({
                         status: 202,
                         message: "Subido con exito",
-                        data: filename,
+                        data:  "uploads/" + filename,
                         token: token
                     }).end()
                 })
@@ -326,6 +328,60 @@ router.post('/upload', (req, res, next) => {
                 message: "No se subio ningun archivo"
             });
         }
+            })
+        }
+    })
+});
+
+/**PUT borrar un mensaje */
+router.put('/borrarmensaje', (req, res) => {
+    jwt.verify(req.body.token, req.body.secreto, (err, data)=>{
+        if(err){
+            res.status(401).send({status: 401, message: "token no valido"});
+        }else{
+            mongoClient.connect(url, {useNewUrlParser: true}, (err, client)=>{
+                if (err){
+                    res.status(500).send({status: 500, message: "error al conectar con la base de datos"});
+                }else{
+                    const database = client.db(dbName)
+                    const collection = database.collection('mensajes')
+                    collection.findOneAndUpdate({remitente: req.body.remitente, receptor: req.body.receptor, mensaje: req.body.mensaje}, {$set : {mensaje: "Este mensaje ha sido eliminado"}}, (err, client)=>{
+                        if (err){
+                            res.status(500).send({status: 500, message: "error en el proceso de actualizado"});
+                        }else{
+                            var token = generarToken({usuario: data.usuario, password: data.password}, req.body.secreto)
+                            data = {no : "content"}
+                            res.status(200).send({status: 200, message: "mensaje borrado exitosamente", token: token})
+                        }
+                    })
+                }
+            })
+        }
+    })
+});
+
+/**PUT borar un mensaje de archivo */
+router.put('/borrarmensajearchivo', (req, res) => {
+    jwt.verify(req.body.token, req.body.secreto, (err, data)=>{
+        if(err){
+            res.status(401).send({status: 401, message: "token no valido"});
+        }else{
+            mongoClient.connect(url, {useNewUrlParser: true}, (err, client)=>{
+                if (err){
+                    res.status(500).send({status: 500, message: "error al conectar con la base de datos"});
+                }else{
+                    const database = client.db(dbName)
+                    const collection = database.collection('mensajes')
+                    collection.findOneAndUpdate({remitente: req.body.remitente, receptor: req.body.receptor, url: req.body.url}, {$set : {url: "Este mensaje ha sido eliminado"}}, (err, client)=>{
+                        if (err){
+                            res.status(500).send({status: 500, message: "error en el proceso de actualizado"});
+                        }else{
+                            var token = generarToken({usuario: data.usuario, password: data.password}, req.body.secreto)
+                            data = {no : "content"}
+                            res.status(200).send({status: 200, message: "mensaje borrado exitosamente", token: token})
+                        }
+                    })
+                }
             })
         }
     })
