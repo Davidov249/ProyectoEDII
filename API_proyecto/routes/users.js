@@ -68,6 +68,18 @@ router.get('/conversasiones', (req, res) => {
   })
 });
 
+/**Verificacion token */
+router.post('/verify', (req, res) => {
+  jwt.verify(req.body.token, req.body.secreto, (err, data)=> {
+    if (err) {
+      res.status(401);
+    }else{
+      var token = generarToken({usuario: data.usuario, password: data.password}, req.body.secreto)
+      res.status(200).json({token: token});
+    }
+  })
+});
+
 /* GET login  */
 router.get('/login', function(req, res, next) {
   mongoClient.connect(url, {useNewUrlParser: true}, (err, client) => {
