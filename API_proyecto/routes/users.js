@@ -81,13 +81,13 @@ router.get('/login', function(req, res, next) {
     collection.find({usuario: req.query.usuario, password: encpassword}).toArray((err, docs)=>{
       if (err) res.status(500).send({message: "error al conectarse con la base de datos"});
       if (docs.length == 0){
-        res.status(404).send({message: "La contraseña o el usuario no son correctos"});
+        res.status(204).send({message: "La contraseña o el usuario no son correctos"});
       }else{
         var token = generarToken({
           usuario: req.query.usuario,
           password: req.query.password
         }, req.query.secreto)
-        res.status(200).send({token: token, message: "Se logró iniciar sesion"});
+        res.status(200).send({token: token});
       }
     })
   })
