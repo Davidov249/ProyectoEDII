@@ -48,8 +48,8 @@ router.get('/all', function(req, res, next) {
                                     vaciousuario2 = true;
                                 }
                                 if(vaciousuario && vaciousuario2){
-                                    res.status(404).send({
-                                        status: 404,
+                                    res.status(204).send({
+                                        status: 204,
                                         message: "no se encontraron mensajes"
                                     });
                                 }else{
@@ -227,8 +227,8 @@ router.get('/downloadmsg', (req, res, next) => {
                         message: "error en el proceso de buscar"
                     })}else{
                         if (docs.length == 0){
-                            res.status(404).send({
-                                status: 404, 
+                            res.status(204).send({
+                                status: 204, 
                                 message: "no hay mensajes de archivos"
                             });
                         }else{

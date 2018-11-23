@@ -24,7 +24,7 @@ router.get('/allusers', (req, res) => {
           })
         }else{
           if (docs.length == 0){
-            res.status(404).json({status: 404, message: "No hay usuarios registrados"});
+            res.status(204).json({status: 204, message: "No hay usuarios registrados"});
           }else{
             res.status(200).json({status: 200, usuarios: docs});
           }
@@ -54,7 +54,7 @@ router.get('/conversasiones', (req, res) => {
               })
             }else{
               if (docs.length == 0){
-                res.status(404).send({status: 404, message: "No hay usuarios registrados"});
+                res.status(204).send({status: 204, message: "No hay usuarios registrados"});
               }else{
                 var token = generarToken({
                   usuario: data.usuario,
@@ -143,7 +143,7 @@ router.put('/actualizar', (req, res, next) =>{
         collection.find({usuario : req.body.usuario, password : passcon}).toArray((err,docs) => {
             if(err) res.status(500).send({status : 500, message: "error en el proceso de busqueda"});
             if(docs == ""){
-              res.status(404).send({status: 404, message: "Usuario o contraseña no validos"});
+              res.status(204).send({status: 204, message: "Usuario o contraseña no validos"});
             }else{
               collection.findOneAndUpdate({usuario: req.body.usuario}, {$set : req.body.campo},function(err, client) {
                 if (err) throw err;
@@ -176,7 +176,7 @@ router.put('/actualizarPassword', (req, res, next) =>{
         collection.find({usuario : req.body.usuario, password : passcon}).toArray((err,docs) => {
             if(err) res.status(500).send({status : 500, message: "error en el proceso de busqueda"});
             if(docs == ""){
-              res.status(404).send({status: 404, message: "Usuario o contraseña no validos"});
+              res.status(204).send({status: 204, message: "Usuario o contraseña no validos"});
             }else{
               req.body.campo.password = md5(req.body.campo.password)
               collection.findOneAndUpdate({usuario: req.body.usuario}, {$set : req.body.campo},function(err, client) {
@@ -211,7 +211,7 @@ router.delete('/borrar/', (req, res) => {
               res.status(500).send({status: 500, message: "Error en el proceso de busqueda"});
             }
             if(docs == ""){
-                res.status(404).end();
+                res.status(204).end();
             }else{
                 collection.deleteOne({"usuario" : req.body.usuario, "password" : passcon}, function(err, client) {
                     if (err) throw err;
