@@ -12,25 +12,25 @@ const dbName = 'ChatDB'
 router.get('/allusers', (req, res) => {
   mongoClient.connect(url, {useNewUrlParser: true}, (err, client)=>{
     if (err){
-      res.status(500).send({status: 500, message: "error al conectar a la base de datos"});
+      res.status(500).json({status: 500, message: "error al conectar a la base de datos"});
     }else{
       const database = client.db(dbName)
       const collection = database.collection('usuarios')
       collection.find({}).toArray((err, docs) =>{
         if (err){
-          res.status(500).send({
+          res.status(500).json({
             status: 500, 
             message: "error en el proceso de busqueda"
           })
         }else{
           if (docs.length == 0){
-            res.status(404).send({status: 404, message: "No hay usuarios registrados"});
+            res.status(404).json({status: 404, message: "No hay usuarios registrados"});
           }else{
             var token = generarToken({
               usuario: data.usuario,
               password: data.password
             }, req.query.secreto)
-            res.status(200).send({status: 200, token: token, message: "Lista de usuarios"});
+            res.status(200).json({status: 200, token: token, message: "Lista de usuarios"});
           }
         }
       })
