@@ -74,6 +74,71 @@ router.get('/all', function(req, res, next) {
     })
 });
 
+/* GET last messages */
+router.get('/ultimos', function(req, res, next) {
+    jwt.verify(req.query.token, req.query.secreto, (err, data)=>{
+        if (err) {
+            res.status(401).send({message: "token no valido"});
+        }else{
+            mongoClient.connect(url, {useNewUrlParser: true}, (err, client) =>{
+                if (err) {
+                    res.status(500).send({message: "error al conectarse con la base de datos"});
+                }
+                const database = client.db(dbName)
+                const collection = database.collection('mensajes')
+                var vacio = false;
+                var vaciousuario
+                collection.find({remitente : req.query.remitente, receptor : req.query.receptor}).toArray((err, docs) =>{
+                    if (err) {
+                          res.status(500).send({
+                          message: "error en el proceso de busqueda"
+                        });
+                    }
+                    else{
+                        if (docs.length == 0) {
+                            vaciousuario = true;
+                        }else{
+                            var jsonUsuario = {
+                            mensajes: docs[docs.length - 1]
+                        };
+                        collection.find({remitente: req.query.receptor, receptor: req.query.remitente}).toArray((err, docs2) =>{
+                            if (err) {
+                                res.status(500).send({
+                                    message: "error al conectarse con la base de datos"
+                                });
+                            }else{
+                                if (docs.length == 0) {
+                                    vaciousuario2 = true;
+                                }
+                                if(vaciousuario && vaciousuario2){
+                                    res.status(204).send({
+                                        message: "no se encontraron mensajes"
+                                    });
+                                }else{
+                                    var jsonUsuario2 = {
+                                        mensajes: docs2[docs2.length - 1]
+                                    }
+                                    var token = generarToken({
+                                        usuario: data.usuario,
+                                        password: data.password
+                                        }, req.query.secreto)
+                                    data = {no: "content"}
+                                    res.status(200).send({
+                                        jsonUsuario,
+                                        jsonUsuario2,
+                                        token: token
+                                    });;
+                                }
+                            }
+                        })
+                    }
+                  } 
+              })
+          })
+        }
+    })
+});
+
 /**POST contraseña cifrado mensajes */
 router.post('/claves', (req, res) => {
     jwt.verify(req.body.token, req.body.secreto, (err, data)=>{
