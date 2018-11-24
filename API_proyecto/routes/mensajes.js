@@ -253,7 +253,6 @@ router.post('/', (req, res, next)=>{
                     data = {no: "content"}
                     res.status(201).send(
                         {
-                            message: "Mensaje enviado con exito",
                             token: token
                         })
                 })
@@ -289,7 +288,6 @@ router.get('/downloadmsg', (req, res, next) => {
                               }, req.query.secreto)
                             data = {no: "content"}
                             res.status(200).send({
-                                message: "obtenido(s) con exito",
                                 url: docs[docs.length - 1].url,
                                 token: token
                             })
@@ -312,7 +310,7 @@ router.get('/download', (req, res) => {
                 usuario: data.usuario,
                 password: data.password
               }, req.query.secreto)
-            res.download(file).status(200).send({message: "subido con exito", token: token})
+            res.download(file).status(200).send({token: token})
         }
     })
 });
@@ -345,12 +343,15 @@ router.post('/upload', (req, res, next) => {
                 })
                 const database = client.db(dbName)
                 const collection = database.collection('mensajes')
+                var now = new Date();
+                dateFormat.masks.formato = 'dd/mm/yyyy-HH:MM:ss';
                 var mensaje = {
                     remitente: req.query.remitente,
                     receptor: req.query.receptor,
                     tipo: "archivo",
                     url: "uploads/" + filename,
-                    nombre: varfiles.archivo.name
+                    nombre: varfiles.archivo.name,
+                    fecha: dateFormat(now, "formato")
                 }
                 collection.insertOne(mensaje, err => {
                     if (err) res.status(500).send({
@@ -362,7 +363,6 @@ router.post('/upload', (req, res, next) => {
                       }, req.query.secreto)
                     data = {no: "content"}
                     res.status(202).send({
-                        message: "Subido con exito",
                         data:  "uploads/" + filename,
                         token: token
                     }).end()
@@ -397,7 +397,7 @@ router.put('/borrarmensaje', (req, res) => {
                         }else{
                             var token = generarToken({usuario: data.usuario, password: data.password}, req.body.secreto)
                             data = {no : "content"}
-                            res.status(200).send({message: "mensaje borrado exitosamente", token: token})
+                            res.status(200).send({token: token})
                         }
                     })
                 }
@@ -424,7 +424,7 @@ router.put('/borrarmensajearchivo', (req, res) => {
                         }else{
                             var token = generarToken({usuario: data.usuario, password: data.password}, req.body.secreto)
                             data = {no : "content"}
-                            res.status(200).send({message: "mensaje borrado exitosamente", token: token})
+                            res.status(200).send({token: token})
                         }
                     })
                 }

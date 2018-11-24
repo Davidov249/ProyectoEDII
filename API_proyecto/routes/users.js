@@ -72,7 +72,7 @@ router.get('/conversasiones', (req, res) => {
 router.post('/verify', (req, res) => {
   jwt.verify(req.body.token, req.body.secreto, (err, data)=> {
     if (err) {
-      res.status(401);
+      res.status(401).send({message: "token no valido"});
     }else{
       var token = generarToken({usuario: data.usuario, password: data.password}, req.body.secreto)
       res.status(200).json({token: token});
@@ -84,7 +84,7 @@ router.post('/verify', (req, res) => {
 router.post('/verify4user', (req, res) => {
   jwt.verify(req.body.token, req.body.secreto, (err, data)=> {
     if (err) {
-      res.status(401);
+      res.status(401).send({message: "token no valido"});
     }else{
       var token = generarToken({usuario: data.usuario, password: data.password}, req.body.secreto)
       res.status(200).json({usuario: data.usuario});
@@ -169,7 +169,7 @@ router.put('/actualizar', (req, res, next) =>{
                 console.log(client)
                 var token = generarToken({usuario: data.usuario, password: data.password}, req.body.secreto)
                 data = {no : "content"}
-                res.status(200).send({message: "campo actualizado exitosamente", token: token})
+                res.status(200).send({token: token})
               })
             }
         })    
@@ -204,7 +204,7 @@ router.put('/actualizarPassword', (req, res, next) =>{
                   //console.log(client)
                   var token = generarToken({usuario: data.usuario, password: data.password}, req.body.secreto)
                   data = {no : "content"}
-                  res.status(200).send({message: "contraseña actualizado con exito", token: token})
+                  res.status(200).send({token: token})
                 }
             })
             }
