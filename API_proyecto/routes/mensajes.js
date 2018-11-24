@@ -167,9 +167,9 @@ router.post('/claves', (req, res) => {
                             var token = generarToken({
                                 usuario: data.usuario,
                                 password: data.password
-                                }, req.query.secreto)
+                                }, req.body.secreto)
                             data = {no: "content"}
-                            res.status(201).send({message: "contraseña creada", clavecifrado: req.body.clavecifrado, token: token});
+                            res.status(201).send({clavecifrado: req.body.clavecifrado, token: token});
                         }
                     })
                 }
@@ -206,7 +206,7 @@ router.get('/claves', (req, res) => {
                             data = {no: "content"}
                             res.status(200).send(
                                 {
-                                    message: "Clave obtenida",
+                                    clavecifrado: docs[0].clavecifrado,
                                     token: token
                                 }
                             );
