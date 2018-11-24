@@ -80,6 +80,18 @@ router.post('/verify', (req, res) => {
   })
 });
 
+/**Verificacion token */
+router.post('/verify4user', (req, res) => {
+  jwt.verify(req.body.token, req.body.secreto, (err, data)=> {
+    if (err) {
+      res.status(401);
+    }else{
+      var token = generarToken({usuario: data.usuario, password: data.password}, req.body.secreto)
+      res.status(200).json({usuario: data.usuario});
+    }
+  })
+});
+
 /* GET login  */
 router.get('/login', function(req, res, next) {
   mongoClient.connect(url, {useNewUrlParser: true}, (err, client) => {
