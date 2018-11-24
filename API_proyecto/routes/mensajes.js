@@ -249,7 +249,7 @@ router.post('/', (req, res, next)=>{
                     var token = generarToken({
                         usuario: data.usuario,
                         password: data.password
-                        }, req.query.secreto)
+                        }, req.body.secreto)
                     data = {no: "content"}
                     res.status(201).send(
                         {
