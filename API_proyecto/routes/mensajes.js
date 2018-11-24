@@ -99,7 +99,7 @@ router.get('/ultimos', function(req, res, next) {
                             vaciousuario = true;
                         }else{
                             var jsonUsuario = {
-                            docs[docs.length - 1]
+                            mensaje : docs[docs.length - 1]
                         };
                         collection.find({remitente: req.query.receptor, receptor: req.query.remitente}).toArray((err, docs2) =>{
                             if (err) {
@@ -116,7 +116,7 @@ router.get('/ultimos', function(req, res, next) {
                                     });
                                 }else{
                                     var jsonUsuario2 = {
-                                        docs2[docs2.length - 1]
+                                        mensaje : docs2[docs2.length - 1]
                                     }
                                     var token = generarToken({
                                         usuario: data.usuario,
