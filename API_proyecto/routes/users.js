@@ -87,7 +87,7 @@ router.post('/verify4user', (req, res) => {
       res.status(401).send({message: "token no valido"});
     }else{
       var token = generarToken({usuario: data.usuario, password: data.password}, req.body.secreto)
-      res.status(200).json({usuario: data.usuario});
+      res.status(200).json({usuario: data.usuario, token: token});
     }
   })
 });
@@ -251,7 +251,7 @@ router.delete('/borrar/', (req, res) => {
 function generarToken(json, clave){
   jwtsimple.encode(json, clave)
   return token = jwt.sign(json, clave, {
-      expiresIn: 120
+      expiresIn: 300
   })
 }
 

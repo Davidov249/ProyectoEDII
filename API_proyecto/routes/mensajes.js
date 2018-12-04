@@ -59,8 +59,8 @@ router.get('/all', function(req, res, next) {
                                         }, req.query.secreto)
                                     data = {no: "content"}
                                     res.status(200).send({
-                                        jsonUsuario,
-                                        jsonUsuario2,
+                                        docs,
+                                        docs2,
                                         token: token
                                     });;
                                 }
@@ -228,7 +228,7 @@ router.post('/prueba', (req, res) => {
 
 /* POST message */
 router.post('/', (req, res, next)=>{
-    jwt.verify(req.body.token, req.body.secreto, (err, data)=>{
+    jwt.verify(req.query.token, req.query.secreto, (err, data)=>{
         if (err) {
             res.status(401).send({message: "token no valido"});
         }else{
@@ -243,18 +243,22 @@ router.post('/', (req, res, next)=>{
                 dateFormat.masks.formato = 'dd/mm/yyyy-HH:MM:ss';
                 req.body.fecha = dateFormat(now, "formato")
                 collection.insertOne(req.body, err => {
-                    if (err) res.status(500).send({
-                        message: "error en el proceso de insertar"
-                    }).end()
-                    var token = generarToken({
-                        usuario: data.usuario,
-                        password: data.password
-                        }, req.query.secreto)
-                    data = {no: "content"}
-                    res.status(201).send(
-                        {
-                            token: token
-                        })
+                    if (err){
+                        res.status(500).send({
+                            message: "error en el proceso de insertar"
+                        }).end()
+                    }
+                    else{
+                        var token = generarToken({
+                            usuario: data.usuario,
+                            password: data.password
+                            }, req.query.secreto)
+                        data = {no: "content"}
+                        res.status(201).send(
+                            {
+                                token: token
+                            })
+                    } 
                 })
             })
         }
@@ -381,7 +385,7 @@ router.post('/upload', (req, res, next) => {
 
 /**PUT borrar un mensaje */
 router.put('/borrarmensaje', (req, res) => {
-    jwt.verify(req.body.token, req.body.secreto, (err, data)=>{
+    jwt.verify(req.query.token, req.query.secreto, (err, data)=>{
         if(err){
             res.status(401).send({message: "token no valido"});
         }else{
@@ -395,7 +399,7 @@ router.put('/borrarmensaje', (req, res) => {
                         if (err){
                             res.status(500).send({message: "error en el proceso de actualizado"});
                         }else{
-                            var token = generarToken({usuario: data.usuario, password: data.password}, req.body.secreto)
+                            var token = generarToken({usuario: data.usuario, password: data.password}, req.query.secreto)
                             data = {no : "content"}
                             res.status(200).send({token: token})
                         }
@@ -436,7 +440,7 @@ router.put('/borrarmensajearchivo', (req, res) => {
 function generarToken(json, clave){
     jwtsimple.encode(json, clave)
     return token = jwt.sign(json, clave, {
-        expiresIn: 120
+        expiresIn: 300
     })
   }
 
